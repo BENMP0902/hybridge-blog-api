@@ -26,6 +26,8 @@ Backend de un sistema de blog que expone endpoints para gestionar publicaciones 
 
 ```
 hybridge-blog-api/
+├── docs/
+│   └── screenshots/        # Evidencias del proceso
 ├── config/
 │   └── config.json         # Configuración de conexión a la BD
 ├── migrations/
@@ -41,7 +43,9 @@ hybridge-blog-api/
 ├── .sequelizerc            # Configuración del CLI de Sequelize
 ├── index.js                # Servidor principal Express
 ├── hola.js                 # Primer ejercicio - Hello World en Node.js
-└── package.json
+|── package.json
+├── README.md       
+└── LEARNING.md      
 ```
 
 ---

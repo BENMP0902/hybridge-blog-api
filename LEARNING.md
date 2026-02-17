@@ -130,7 +130,7 @@ Se importó `{ Post, Author }` pero en la ruta se usó `db.Post.findAll()`:
 const { Post, Author } = require('./models');
 
 // Uso incorrecto (db no fue importado)
-const posts = await db.Post.findAll(); // ❌
+const posts = await Post.findAll(); // ❌
 ```
 
 **Solución:**  
@@ -237,6 +237,16 @@ Revisa models/post.js, models/author.js e index.js y corrígelo.
 | Importar `{ Post, Author }` directamente | Importar `db` completo | Más explícito y legible |
 | Supabase para alojar PostgreSQL | SQLite local | Simular entorno real de producción |
 | Alias `as: 'author'` en asociaciones | Sin alias | Consistencia con convenciones en inglés |
+
+---
+
+### Verificación final — API funcionando
+
+**Servidor corriendo y SQL generado por Sequelize:**
+![Server running](docs/screenshots/01-server-running-with-sql-query.png)
+
+**Esquema de base de datos en Supabase:**
+![Supabase schema](docs/screenshots/02-supabase-schema-authors-posts.png)
 
 ---
 
