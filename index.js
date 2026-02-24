@@ -5,6 +5,7 @@ require('dotenv').config({ silent: true });
 
 // 2. Imports
 const express = require('express');
+const posts = require('./posts')
 const { Post, Author } = require('./models');
 
 // 3. Configuración de Express
@@ -19,7 +20,7 @@ app.use(express.json());
 // Ruta raíz (para que no dé "Cannot GET /")
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'API de Hybridge Blog',
+    message: 'Bienvenido a la API de Hybridge Blog',
     endpoints: {
       posts: '/api/posts'
     }
@@ -39,6 +40,138 @@ app.get('/api/posts', async (req, res) => {
     res.status(500).json({ error: 'Error al obtener posts' });
   }
 });
+
+// POST - Crear un nuevo post
+// Endpoint: POST /api/posts
+// Status: 201 Created
+app.post('/api/posts', (req, res) => {
+  const { title, content, author } = req.body;
+  // =========================================================
+  // VALIDACIÓN DE INPUT (primera línea de defensa)
+  // =========================================================
+  // 1. Campos requeridos
+  if (!title || !content || !author) {
+    return res.status(400).json({
+      error: 'Missing required fields',
+      required: ['title', 'content', 'author']
+    });
+  }
+  // 2. Validación de tipos
+  if (typeof title !== 'string' || typeof content !== 'string') {
+    return res.status(400).json({
+      error: 'title and content must be strings'
+    });
+  }
+  // 3. Validación de longitud (previene almacenamiento excesivo)
+  if (title.length > 200 || content.length > 10000) {
+    return res.status(400).json({
+      error: 'title max 200 chars, content max 10000 chars'
+    });
+  }
+  // 4. Sanitización básica (eliminar HTML tags)
+  // En producción usa librerías como DOMPurify o sanitize-html
+  const sanitize = (str) => str.replace(/<[^>]*>/g, '');
+
+  const newPost = {
+    // SECURITY: NO uses posts.length + 1 como ID en producción
+    // Si eliminas posts, los IDs se repiten. Usa UUID o auto-increment de DB
+    id: posts.length > 0 ? Math.max(...posts.map(p => p.id)) + 1 : 1,
+    title: sanitize(title.trim()),     // trim() elimina espacios
+    content: sanitize(content.trim()),
+    author: sanitize(author.trim()),
+    date: new Date()
+  };
+
+  posts.push(newPost);
+  res.status(201).json(newPost);  // 201 = recurso creado
+});
+
+// PUT - Reemplazar un post completo
+// Semántica: TODOS los campos deben estar presentes
+app.put('/api/posts/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid ID' });
+  }
+
+  const postIndex = posts.findIndex(p => p.id === id);
+
+  if (postIndex === -1) {
+    return res.status(404).json({ error: 'Post not found' });
+  }
+
+  const { title, content, author } = req.body;
+
+  // PUT requiere TODOS los campos (reemplazo completo)
+  if (!title || !content || !author) {
+    return res.status(400).json({
+      error: 'PUT requires all fields: title, content, author'
+    });
+  }
+  // Preservar el ID y la fecha de creación original
+  posts[postIndex] = {
+    ...posts[postIndex],       // Preserva id y date originales
+    title: title.trim(),
+    content: content.trim(),
+    author: author.trim(),
+    updatedAt: new Date()       // Registrar cuándo se modificó
+  };
+
+  res.json(posts[postIndex]);
+});
+
+// PATCH - Actualizar campos específicos
+// Semántica: solo los campos enviados se actualizan
+app.patch('/api/posts/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid ID' });
+  }
+
+  const postIndex = posts.findIndex(p => p.id === id);
+
+  if (postIndex === -1) {
+    return res.status(404).json({ error: 'Post not found' });
+  }
+
+  const { title, content, author } = req.body;
+
+  // SECURITY: solo actualizar campos permitidos (whitelist)
+  // Nunca hagas Object.assign(post, req.body) directamente
+  // Un atacante podría enviar { id: 999, role: 'admin' }
+  if (title) posts[postIndex].title = title.trim();
+  if (content) posts[postIndex].content = content.trim();
+  if (author) posts[postIndex].author = author.trim();
+  posts[postIndex].updatedAt = new Date();
+
+  res.json(posts[postIndex]);
+});
+
+// DELETE - Eliminar un post
+// Endpoint: DELETE /api/posts/:id
+// Status: 204 No Content (sin body de respuesta)
+app.delete('/api/posts/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (isNaN(id) || id <= 0) {
+    return res.status(400).json({ error: 'Invalid ID' });
+  }
+
+  const postIndex = posts.findIndex(p => p.id === id);
+
+  if (postIndex === -1) {
+    return res.status(404).json({ error: 'Post not found' });
+  }
+  // splice modifica el array original: elimina 1 elemento en postIndex
+  posts.splice(postIndex, 1);
+
+  // 204 = éxito sin contenido de respuesta
+  // res.send() sin argumento o res.end() evita enviar body
+  res.status(204).send();
+});
+
 
 // 6. Inicializar servidor
 app.listen(PORT, () => {
