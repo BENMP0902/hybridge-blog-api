@@ -1,4 +1,8 @@
 // index.js
+// =========================================================
+// Hybridge Blog API - CRUD con Express.js
+// =========================================================
+
 
 // 1. Configuración de variables de entorno
 require('dotenv').config({ silent: true });
@@ -12,8 +16,9 @@ const { Post, Author } = require('./models');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 4. Middleware
-app.use(express.json());
+// 4. Middlewares Globales
+app.disable('x-power-by');                     // Ocultar header Express
+app.use(express.json({  limit: '10kb'  }));    // Parsear JSON con limite
 
 // 5. Rutas
 
@@ -31,13 +36,14 @@ app.get('/', (req, res) => {
 app.get('/api/posts', async (req, res) => {
   try {
     const posts = await Post.findAll({
-      include: [{ model: Author, as: 'author' }],
+      include: [{ model: Author, as: 'author' }],   // LEFT JOIN
       where: { deletedAt: null }
     });
     res.json(posts);
   } catch (error) {
+    // SECURITY: log interno completo, respuesta géneroca al cliente
     console.error('Error al obtener posts:', error);
-    res.status(500).json({ error: 'Error al obtener posts' });
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
