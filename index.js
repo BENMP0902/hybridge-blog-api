@@ -65,31 +65,6 @@ app.get('/api/posts/:id', (req, res) => {
 // Status: 201 Created
 app.post('/api/posts', (req, res) => {
   const { title, content, author } = req.body;
-  // =========================================================
-  // VALIDACIÓN DE INPUT (primera línea de defensa)
-  // =========================================================
-  // 1. Campos requeridos
-  if (!title || !content || !author) {
-    return res.status(400).json({
-      error: 'Missing required fields',
-      required: ['title', 'content', 'author']
-    });
-  }
-  // 2. Validación de tipos
-  if (typeof title !== 'string' || typeof content !== 'string') {
-    return res.status(400).json({
-      error: 'title and content must be strings'
-    });
-  }
-  // 3. Validación de longitud (previene almacenamiento excesivo)
-  if (title.length > 200 || content.length > 10000) {
-    return res.status(400).json({
-      error: 'title max 200 chars, content max 10000 chars'
-    });
-  }
-  // 4. Sanitización básica (eliminar HTML tags)
-  // En producción usa librerías como DOMPurify o sanitize-html
-  const sanitize = (str) => str.replace(/<[^>]*>/g, '');
 
   const newPost = {
     // SECURITY: NO uses posts.length + 1 como ID en producción
