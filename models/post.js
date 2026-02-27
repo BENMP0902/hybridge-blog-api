@@ -1,22 +1,21 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
+
 
 module.exports = (sequelize, DataTypes) => {
   class Post extends Model {
     static associate(models) {
-      // Un post pertenece a un solo autor
+      // Un post PERTENECE A un autor
       Post.belongsTo(models.Author, {
         foreignKey: 'authorId',
-        as: 'author'
+        as: 'author'              // include: { as: 'author' }
       });
     }
   }
   Post.init({
-    title: DataTypes.STRING,
-    content: DataTypes.TEXT,
-    authorId: DataTypes.INTEGER,
+    title: DataTypes.STRING,       // VARCHAR(255)
+    content: DataTypes.TEXT,        // TEXT (sin límite)
+    authorId: DataTypes.INTEGER,    // FK a Authors.id
     deletedAt: DataTypes.DATE
   }, {
     sequelize,
@@ -24,6 +23,5 @@ module.exports = (sequelize, DataTypes) => {
     paranoid: true,
     timestamps: true
   });
-
   return Post;
 };
