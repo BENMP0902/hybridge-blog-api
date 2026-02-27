@@ -167,6 +167,48 @@ app.delete('/api/posts/:id', (req, res) => {
 });
 
 
+// =========================================================
+// CREATE AUTHOR
+// POST /api/authors
+// Status: 201 Created
+// =========================================================
+app.post('/api/authors', async (req, res) => {
+  try {
+    const { name } = req.body;
+
+
+    // --- Validación de input ---
+    if (!name) {
+      return res.status(400).json({
+        error: 'Missing required field: name'
+      });
+    }
+    if (typeof name !== 'string') {
+      return res.status(400).json({
+        error: 'name must be a string'
+      });
+    }
+    if (name.trim().length === 0 || name.trim().length > 100) {
+      return res.status(400).json({
+        error: 'name must be between 1 and 100 characters'
+      });
+    }
+
+
+    // --- Crear en DB ---
+    // Sequelize genera: INSERT INTO Authors (name, createdAt, updatedAt)
+    //                   VALUES ($1, $2, $3) RETURNING *;
+    const author = await Author.create({ name: name.trim() });
+
+
+    res.status(201).json(author);
+  } catch (error) {
+    console.error('Error creating author:', error.message);
+    res.status(500).json({ error: 'Failed to create author' });
+  }
+});
+
+
 // 6. Inicializar servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
