@@ -33,3 +33,5 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+index-v1.js
+.claude
