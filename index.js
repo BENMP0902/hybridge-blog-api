@@ -43,22 +43,37 @@ app.disable('x-powered-by');
 /* ───── 2. Estrategia Local (login) ───── */
 passport.use('local',
   new LocalStrategy(
-    { usernameField: 'email', passwordField: 'password', session: false },
-    async (email, password, done) => {
+    {
+      usernameField: 'email',     // Campo del body que actúa como username
+      passwordField: 'password',   // Campo del body con la contraseña
+      session: false               // No crear sesión server-side (usamos JWT)
+    },
+    async (email, password, done) => {  // Función verificadora
       try {
+        // 1. Buscar usuario por email en la DB
         const user = await db.User.findOne({ where: { email } });
+
+
+        // 2. Si no existe, fallo de autenticación
         if (!user) {
           return done(null, false, { message: 'Usuario no existe' });
         }
+
+
+        // 3. Comparar password con hash almacenado (timing-safe)
         const ok = await bcrypt.compare(password, user.password);
         if (!ok) {
           return done(null, false, { message: 'Contraseña incorrecta' });
         }
-        return done(null, user); // autenticado
-      } catch (err) { return done(err); }
+
+
+        // 4. Éxito: pasar usuario al siguiente middleware
+        return done(null, user);
+      } catch (err) { return done(err); }  // Error inesperado
     }
   )
 );
+
 
 //* ───── 3. Estrategia JWT (protección) ───── */
 passport.use('jwt',
@@ -78,17 +93,28 @@ passport.use('jwt',
   )
 );
 
-
+// Ruta de registro Signup
 app.post('/api/signup', async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password } = req.body;  // Destructuring del body
+
+
+    // Hashear password: cost factor 10 = 2^10 = 1024 iteraciones
+    // bcrypt genera el salt automáticamente
     const hash = await bcrypt.hash(password, 10);
+
+
+    // Crear usuario con hash (NUNCA con password original)
     const user = await db.User.create({ name, email, password: hash });
-    res.status(201).json({ id: user.id, email: user.emaail });
+
+
+    // Responder SIN incluir el hash de password
+    res.status(201).json({ id: user.id, email: user.email });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
 });
+
 
 // Login → genera token 
 app.post('/api/login',
@@ -102,11 +128,20 @@ app.post('/api/login',
 
 // Ruta protegida
 app.get('/api/profile',
+  // Guard: solo pasa si el JWT es válido y el usuario existe
   passport.authenticate('jwt', { session: false }),
+
+
+  // Handler: req.user viene poblado por la estrategia JWT
   (req, res) => {
-    res.json({ id: req.user.id, email: req.user.email, msg: 'Acceso concedido 👋' });
+    res.json({
+      id: req.user.id,
+      email: req.user.email,
+      msg: 'Acceso concedido'
+    });
   }
 );
+
 
 // ============================================================
 // RUTAS: AUTHOR CRUD
